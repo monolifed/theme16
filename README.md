@@ -1,9 +1,9 @@
 # theme16
 theme manager for [rxi/lite](https://github.com/rxi/lite) with base16 themes
 
-Note: Files in the schemes directory have their own licenses (mostly MIT)
-schemes/base16: https://github.com/chriskempson/base16#scheme-repositories
-schemes/daylerees: https://github.com/daylerees/colour-schemes
+Note: Files in the schemes directory have their own licenses (mostly MIT)  
+schemes/base16: https://github.com/chriskempson/base16#scheme-repositories  
+schemes/daylerees: https://github.com/daylerees/colour-schemes  
 
 # instructions
 * place the repository in data/plugins (so you have data/plugins/theme16 folder)
