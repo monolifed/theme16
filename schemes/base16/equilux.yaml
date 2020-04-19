@@ -1,0 +1,18 @@
+scheme: "Equilux"
+author: "monolifed"
+base00: "282828" #e40
+base01: "414141" #e65
+base02: "5f5f5f" #e90
+base03: "737373" #e115
+base04: "8c8c8c" #e140
+base05: "a5a5a5" #e165
+base06: "bebebe" #e190
+base07: "d7d7d7" #e215
+base08: "ca9595" #red
+base09: "8686c1" #dark yellow
+base0A: "aaaa76" #yellow
+base0B: "88b888" #green
+base0C: "74baba" #cyan
+base0D: "9f9fd0" #blue
+base0E: "be94be" #magenta
+base0F: "a35e5e" #red+
