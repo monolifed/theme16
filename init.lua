@@ -303,7 +303,7 @@ end
 M.apply = change_theme
 
 
-command.add("core.docview", {
+command.add(nil, {
 	["theme:change"] = change_theme,
 	["theme:next"] = function() cycle_theme( 1) end,
 	["theme:prev"] = function() cycle_theme(-1) end,
