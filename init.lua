@@ -247,7 +247,7 @@ local apply_scheme = function(name)
 
 	style.background     = toRGB(vars["back"])
 	style.background2    = toRGB(vars["back"])
-	style.background3    = { common.color "#ff0000" } --????
+	style.background3    = toRGB(vars["lnback"])
 	style.text           = toRGB(vars["fore"])
 	style.caret          = toRGB(vars["fore"])
 	style.accent         = toRGB(vars["variable"])
