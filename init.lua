@@ -1,21 +1,33 @@
-local _, mpath = ...
-local M = {dir = mpath:gsub("init.lua$", "")}
+local modname, mpath = ...
+mpath = mpath:gsub("init.lua$", "")
+
+local M = {}
 
 local core    = require "core"
 local style   = require "core.style"
 local common  = require "core.common"
 local command = require "core.command"
 
+local function get_files(path, subpath, t)
+	t = t or {}
+	subpath = subpath or ""
+	local currentpath = path .. "/" .. subpath
+	local size_limit = 8192
+	local all = system.list_dir(currentpath)
 
-local _sf = string.format
-local _mf = math.floor
-
-local split = function(s)
-	local args = {}
-	for a in string.gmatch(s, "%S+") do
-	   table.insert(args, a)
+	for _, file in ipairs(all) do
+	  if not file:find("^%.") then
+		local info = system.get_file_info(currentpath .. file)
+		if info and info.size < size_limit then
+			if info.type == "dir" then
+				get_files(path, subpath .. file .. "/", t)
+			elseif file:match("%.yaml$") or file:match("%.json$") then
+				table.insert(t, subpath .. file)
+			end
+		end
+	  end
 	end
-	return args
+	return t
 end
 
 local clamp = function(x, min, max)
@@ -68,7 +80,7 @@ local to_hsl = function(r, g, b)
 	return h, s, l
 end
 
-local FF = function(a) return _mf(a * 0xFF) end
+local FF = function(a) return math.floor(a * 0xFF) end
 
 -- h in [0, 6], s in [0, 1], l in [0,1]
 local to_rgb = function(h, s, l)
@@ -102,9 +114,6 @@ local rgbstr_to_hsl = function(s)
 	return to_hsl(tonumber(r, 16), tonumber(g, 16), tonumber(b, 16))
 end
 
-local hsl_to_rgbstr = function(h, s, l)
-	return _sf('#%02x%02x%02x', to_rgb(h, s, l))
-end
 
 local remapper = {}
 
@@ -200,9 +209,8 @@ end
 ]]
 
 local isfile = function(fname)
-	local f = io.open(fname, 'r')
-	if f then io.close(f) return true end
-	return false
+	local info = system.get_file_info(fname)
+	return info and info.type == "file"
 end
 
 local locate_scheme = function(pdir, name)
@@ -213,26 +221,24 @@ local locate_scheme = function(pdir, name)
 
 	local s
 	for i, fmt in ipairs(search) do
-		s = _sf(fmt, name)
+		s = string.format(fmt, name)
 		if isfile(pdir .. s) then return s end
 	end
 end
 
 local apply_scheme = function(name)
-	local schemedir = M.dir .. 'schemes/'
-
 	local sadj = M.saturation or 1.0
 	local ladj = M.lightness  or 1.0
 	--local wadj = M.whitespace or 0.5
 
-	local scheme_path = locate_scheme(schemedir, name)
+	local scheme_path = locate_scheme(M.schemedir, name)
 	if not scheme_path then
 		core.error('File "%s" cannot be found', name)
 		return
 	end
 
 	name = scheme_path
-	scheme_path = schemedir .. scheme_path
+	scheme_path = M.schemedir .. scheme_path
 
 	local filetype = scheme_path:sub(-5)
 	local vars = parse_scheme(scheme_path, filetype)
@@ -249,7 +255,7 @@ local apply_scheme = function(name)
 	style.background2    = toRGB(vars["back"])
 	style.background3    = toRGB(vars["lnback"])
 	style.text           = toRGB(vars["fore"])
-	style.caret          = toRGB(vars["fore"])
+	style.caret          = toRGB(vars["lnfore"])
 	style.accent         = toRGB(vars["variable"])
 	style.dim            = toRGB(vars["comment"])
 	style.divider        = toRGB(vars["whitespace"])
@@ -257,7 +263,7 @@ local apply_scheme = function(name)
 	style.line_number    = toRGB(vars["lnfore"], 0x80)
 	style.line_number2   = toRGB(vars["lnfore"])
 	style.line_highlight = toRGB(vars["class"], 0x10)
-	style.scrollbar      = toRGB(vars["lnback"])
+	style.scrollbar      = toRGB(vars["whitespace"])
 	style.scrollbar2     = toRGB(vars["variable"])
 
 	style.syntax["normal"]   = toRGB(vars["operator"])
@@ -266,7 +272,7 @@ local apply_scheme = function(name)
 	style.syntax["keyword"]  = toRGB(vars["keyword"])
 	style.syntax["keyword2"] = toRGB(vars["variable"])
 	style.syntax["number"]   = toRGB(vars["number"])
-	style.syntax["literal"]  = toRGB(vars["class"])
+	style.syntax["literal"]  = toRGB(vars["support"])
 	style.syntax["string"]   = toRGB(vars["string"])
 	style.syntax["operator"] = toRGB(vars["operator"])
 	style.syntax["function"] = toRGB(vars["function"])
@@ -282,7 +288,7 @@ end
 
 local cycle_theme = function(step)
 	local name = M.current
-	local list = dofile(M.dir..'scheme_list.lua')
+	local list = M.schemelist
 	local list_len = #list
 	local list_cur = 0
 	for i, v in ipairs(list) do
@@ -300,8 +306,28 @@ local cycle_theme = function(step)
 	core.log('Using "%s" %i/%i', M.current, list_cur, list_len)
 end
 
-M.apply = change_theme
-
+M.apply = function()
+	--M.dir = mpath
+	if not M.schemedir then M.schemedir = mpath .. "schemes/" end
+	if not M.listfile  then M.listfile  = mpath .. "scheme_list.lua" end
+	if M.uselistfile then
+		M.schemelist = dofile(M.listfile)
+	else
+		M.schemelist = get_files(M.schemedir)
+		table.sort(M.schemelist)
+		if M.savelistfile then
+			local f = io.open(M.listfile, "w")
+			f:write("-- This is an auto-generated file\nreturn {\n")
+			for i, v in ipairs(M.schemelist) do
+				f:write("\t'") f:write(v) f:write("',\n")
+			end
+			f:write("}\n")
+			f:close()
+		end
+	end
+	--if not M.name then M.name = M.schemelist[1] end
+	change_theme()
+end
 
 command.add(nil, {
 	["theme:change"] = change_theme,

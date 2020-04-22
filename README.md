@@ -11,11 +11,15 @@ schemes/daylerees: https://github.com/daylerees/colour-schemes
 * example code:  
 ```lua
 local theme = require "plugins.theme16"
--- the following 2 take a value between 0 and 2
+-- the following 2 variables take a value between 0 and 2
 -- values less than 1 decrease the saturation (at 0 it becomes 0, at 1 there is no change)
 -- values greater than 1 increase the saturation (at 2 it becomes 1)
 --theme.saturation = 0.95 -- overall saturation
 --theme.lightness  = 0.90 -- overall lightness
+-- If the following is true it will use scheme_list.lua. Otherwise a table will be generated 
+--theme.uselistfile  = true 
+-- If a table is generated and the following is true, it will be saved as scheme_list.lua
+--theme.savelistfile = true
 theme.name = "edge-dark" -- name of the theme
 theme.apply() -- this loads the theme
 
