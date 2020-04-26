@@ -7,6 +7,7 @@ local core    = require "core"
 local style   = require "core.style"
 local common  = require "core.common"
 local command = require "core.command"
+local config  = require "core.config"
 
 local function get_files(path, subpath, t)
 	t = t or {}
@@ -227,13 +228,13 @@ local locate_scheme = function(pdir, name)
 end
 
 local apply_scheme = function(name)
-	local sadj = M.saturation or 1.0
-	local ladj = M.lightness  or 1.0
+	local sadj = M.saturation
+	local ladj = M.lightness
 	--local wadj = M.whitespace or 0.5
 
 	local scheme_path = locate_scheme(M.schemedir, name)
 	if not scheme_path then
-		core.error('File "%s" cannot be found', name)
+		core.error('Theme "%s" cannot be found', name)
 		return
 	end
 
@@ -243,7 +244,7 @@ local apply_scheme = function(name)
 	local filetype = scheme_path:sub(-5)
 	local vars = parse_scheme(scheme_path, filetype)
 	if vars == nil then
-		core.error('Filetype "%s" is not supported', filetype)
+		core.error('File "%s" is not supported', filetype)
 		return
 	end
 
@@ -283,7 +284,7 @@ end
 local change_theme = function()
 	local name = M.name
 	if not name then
-		core.log('Theme name is not set')
+		core.log_quiet('Theme name is not set')
 		return 
 	end
 	
@@ -296,44 +297,50 @@ local cycle_theme = function(step)
 	local name = M.current
 	local list = M.schemelist
 	local list_len = #list
-	local list_cur = 0
-	for i, v in ipairs(list) do
-		if v == name then
-			list_cur = i
-			break
+	local list_cur = 1
+	if name then
+		for i, v in ipairs(list) do
+			if v == name then
+				list_cur = i
+				break
+			end
 		end
+		list_cur = 1 + ((list_cur + step - 1) % list_len)
+	else
+		list_cur = step >= 0 and 1 or list_len
 	end
-	if list_cur == 0 then
-		list_cur = 1
-	end
-	list_cur = 1 + ((list_cur + step - 1) % list_len)
 	name = list[list_cur]
 	apply_scheme(name)
-	core.log('Using "%s" %i/%i', M.current, list_cur, list_len)
+	core.log('Using %i/%i: "%s"', list_cur, list_len, M.current)
 end
 
-M.init = function()
-	M.schemedir = mpath .. "schemes/"
-	M.listfile  = mpath .. "scheme_list.lua"
-	M.schemelist = get_files(M.schemedir)
-	table.sort(M.schemelist)
-	return M
-end
+local modinit = function()
+	M.name = config.theme_name
+	M.saturation = config.theme_saturation or 1.0
+	M.lightness = config.theme_lightness  or 1.0
+	M.schemedir = config.theme_schemedir or mpath .. "schemes/"
+	M.listfile = config.theme_listfile or mpath .. "scheme_list.lua"
 
-M.apply = function()
-	if M.uselistfile then
+	if config.theme_usefile then
 		M.schemelist = dofile(M.listfile)
-	elseif M.savelistfile then
-		local f = io.open(M.listfile, "w")
-		f:write("-- This is an auto-generated file\nreturn {\n")
-		for i, v in ipairs(M.schemelist) do
-			f:write("\t'") f:write(v) f:write("',\n")
+	else
+		M.schemelist = get_files(M.schemedir)
+		table.sort(M.schemelist)
+		if config.theme_savefile then
+			local f = io.open(M.listfile, "w")
+			f:write("-- This is an auto-generated file\nreturn {\n")
+			for i, v in ipairs(M.schemelist) do
+				f:write("\t'") f:write(v) f:write("',\n")
+			end
+			f:write("}\n")
+			f:close()
 		end
-		f:write("}\n")
-		f:close()
 	end
 	change_theme()
+	core.redraw = true
 end
+
+core.add_thread(modinit)
 
 command.add(nil, {
 	["theme:change"] = change_theme,
@@ -342,4 +349,4 @@ command.add(nil, {
 
 })
 
-return M.init()
+return M

@@ -10,18 +10,16 @@ schemes/daylerees: https://github.com/daylerees/colour-schemes
 * add initialization code to data/user/init.lua
 * example code:  
 ```lua
-local theme = require "plugins.theme16"
 -- the following 2 variables take a value between 0 and 2
 -- values less than 1 decrease the saturation (at 0 it becomes 0, at 1 there is no change)
 -- values greater than 1 increase the saturation (at 2 it becomes 1)
---theme.saturation = 0.95 -- overall saturation
---theme.lightness  = 0.90 -- overall lightness
+--config.theme_saturation = 0.95 -- overall saturation
+--config.theme_lightness  = 0.90 -- overall lightness
 -- If the following is true it will use scheme_list.lua. Otherwise a table will be generated 
---theme.uselistfile  = true 
+--config.theme_usefile  = true 
 -- If a table is generated and the following is true, it will be saved as scheme_list.lua
---theme.savelistfile = true
-theme.name = "edge-dark" -- name of the theme
-theme.apply() -- this loads the theme
+--config.theme_savefile = true
+config.theme_name = "edge-dark" -- name of the theme
 
 -- dynamically load a theme
 keymap.add { ["alt+home"] = "theme:change" }
