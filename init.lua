@@ -281,7 +281,13 @@ local apply_scheme = function(name)
 end
 
 local change_theme = function()
-	local name = M.name:lower():gsub(' ','-'):gsub('[,]','')
+	local name = M.name
+	if not name then
+		core.log('Theme name is not set')
+		return 
+	end
+	
+	name = name:lower():gsub(' ','-'):gsub('[,]','')
 	apply_scheme(name)
 	core.log_quiet('Using "%s"', M.current)
 end
@@ -306,34 +312,34 @@ local cycle_theme = function(step)
 	core.log('Using "%s" %i/%i', M.current, list_cur, list_len)
 end
 
-M.apply = function()
-	--M.dir = mpath
-	if not M.schemedir then M.schemedir = mpath .. "schemes/" end
-	if not M.listfile  then M.listfile  = mpath .. "scheme_list.lua" end
-	if M.uselistfile then
-		M.schemelist = dofile(M.listfile)
-	else
-		M.schemelist = get_files(M.schemedir)
-		table.sort(M.schemelist)
-		if M.savelistfile then
-			local f = io.open(M.listfile, "w")
-			f:write("-- This is an auto-generated file\nreturn {\n")
-			for i, v in ipairs(M.schemelist) do
-				f:write("\t'") f:write(v) f:write("',\n")
-			end
-			f:write("}\n")
-			f:close()
-		end
-	end
-	if not M.name then M.name = M.schemelist[1] end
-	change_theme()
-
-	command.add(nil, {
-		["theme:change"] = change_theme,
-		["theme:next"] = function() cycle_theme( 1) end,
-		["theme:prev"] = function() cycle_theme(-1) end,
-
-	})
+M.init = function()
+	M.schemedir = mpath .. "schemes/"
+	M.listfile  = mpath .. "scheme_list.lua"
+	M.schemelist = get_files(M.schemedir)
+	table.sort(M.schemelist)
+	return M
 end
 
-return M
+M.apply = function()
+	if M.uselistfile then
+		M.schemelist = dofile(M.listfile)
+	elseif M.savelistfile then
+		local f = io.open(M.listfile, "w")
+		f:write("-- This is an auto-generated file\nreturn {\n")
+		for i, v in ipairs(M.schemelist) do
+			f:write("\t'") f:write(v) f:write("',\n")
+		end
+		f:write("}\n")
+		f:close()
+	end
+	change_theme()
+end
+
+command.add(nil, {
+	["theme:change"] = change_theme,
+	["theme:next"] = function() cycle_theme( 1) end,
+	["theme:prev"] = function() cycle_theme(-1) end,
+
+})
+
+return M.init()
