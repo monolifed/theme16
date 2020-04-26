@@ -1,7 +1,7 @@
 local modname, mpath = ...
 mpath = mpath:gsub("init.lua$", "")
 
-local M = {}
+local current_theme
 
 local core    = require "core"
 local style   = require "core.style"
@@ -201,8 +201,8 @@ end
 --[[
 local dim_color = function(t, name, sdim, ldim)
 	local c = t[name]
-	sdim = sdim or 0.75 --M.dimSaturation
-	ldim = ldim or 0.75 --M.dimLightness
+	sdim = sdim or 0.75 --config.theme_dimsaturation
+	ldim = ldim or 0.75 --config.theme_dimlightness
 	local r, g, b = to_rgb(c[1], adj(sdim, c[2]),
 		adjmix(ldim, c[3], t.back[3], t.fore[3]))
 	return {r, g, b, 0xFF}
@@ -215,7 +215,8 @@ local isfile = function(fname)
 end
 
 local locate_scheme = function(pdir, name)
-	if isfile(pdir .. name) then return name end
+	local path = pdir .. name
+	if isfile(path) then return name, path end
 
 	local search = {'%s.yaml', 'base16/%s', 'base16/%s.yaml',
 		'%s.json', 'daylerees/%s', 'daylerees/%s.json'}
@@ -223,23 +224,21 @@ local locate_scheme = function(pdir, name)
 	local s
 	for i, fmt in ipairs(search) do
 		s = string.format(fmt, name)
-		if isfile(pdir .. s) then return s end
+		path = pdir .. s
+		if isfile(path) then return s, path end
 	end
 end
 
 local apply_scheme = function(name)
-	local sadj = M.saturation
-	local ladj = M.lightness
-	--local wadj = M.whitespace or 0.5
+	local sadj = config.theme_saturation
+	local ladj = config.theme_lightness
+	--local wadj = config.theme_whitespace or 0.5
 
-	local scheme_path = locate_scheme(M.schemedir, name)
+	local scheme_name, scheme_path = locate_scheme(config.theme_dir, name)
 	if not scheme_path then
 		core.error('Theme "%s" cannot be found', name)
 		return
 	end
-
-	name = scheme_path
-	scheme_path = M.schemedir .. scheme_path
 
 	local filetype = scheme_path:sub(-5)
 	local vars = parse_scheme(scheme_path, filetype)
@@ -278,24 +277,24 @@ local apply_scheme = function(name)
 	style.syntax["operator"] = toRGB(vars["operator"])
 	style.syntax["function"] = toRGB(vars["function"])
 
-	M.current = name
+	current_theme = scheme_name
 end
 
-local change_theme = function()
-	local name = M.name
+local change_theme = function(init)
+	local name = config.theme_name
 	if not name then
-		core.log_quiet('Theme name is not set')
+		if not init then core.log('Theme name is not set') end
 		return 
 	end
 	
 	name = name:lower():gsub(' ','-'):gsub('[,]','')
 	apply_scheme(name)
-	core.log_quiet('Using "%s"', M.current)
+	core.log_quiet('Using "%s"', current_theme)
 end
 
 local cycle_theme = function(step)
-	local name = M.current
-	local list = M.schemelist
+	local name = current_theme
+	local list = config.theme_list
 	local list_len = #list
 	local list_cur = 1
 	if name then
@@ -311,32 +310,41 @@ local cycle_theme = function(step)
 	end
 	name = list[list_cur]
 	apply_scheme(name)
-	core.log('Using %i/%i: "%s"', list_cur, list_len, M.current)
+	core.log('Using %i/%i: "%s"', list_cur, list_len, current_theme)
 end
 
 local modinit = function()
-	M.name = config.theme_name
-	M.saturation = config.theme_saturation or 1.0
-	M.lightness = config.theme_lightness  or 1.0
-	M.schemedir = config.theme_schemedir or mpath .. "schemes/"
-	M.listfile = config.theme_listfile or mpath .. "scheme_list.lua"
+	if not config.theme_saturation then config.theme_saturation = 1.0 end
+	if not config.theme_lightness  then config.theme_lightness  = 1.0 end
+	if not config.theme_dir then config.theme_dir = mpath .. "schemes/" end
+	if not config.theme_listfile then config.theme_listfile = mpath .. "scheme_list.lua" end
 
-	if config.theme_usefile then
-		M.schemelist = dofile(M.listfile)
-	else
-		M.schemelist = get_files(M.schemedir)
-		table.sort(M.schemelist)
-		if config.theme_savefile then
-			local f = io.open(M.listfile, "w")
+	local list
+	if config.theme_list then -- use the user defined list
+		list = {}
+		for i, name in ipairs(config.theme_list) do
+			name = name:lower():gsub(' ','-'):gsub('[,]','')
+			name = locate_scheme(config.theme_dir, name)
+			if name then table.insert(list, name) end
+		end
+	elseif config.theme_usefile then -- OR use a list file
+		list = dofile(config.theme_listfile)
+	else -- OR scan the theme directory
+		list = get_files(config.theme_dir)
+		table.sort(list)
+		if config.theme_savefile then -- save the list file
+			local f = io.open(config.theme_listfile, "w")
 			f:write("-- This is an auto-generated file\nreturn {\n")
-			for i, v in ipairs(M.schemelist) do
-				f:write("\t'") f:write(v) f:write("',\n")
+			for i, name in ipairs(list) do
+				f:write("\t'") f:write(name) f:write("',\n")
 			end
 			f:write("}\n")
 			f:close()
 		end
 	end
-	change_theme()
+	config.theme_list = list
+	
+	change_theme(true)
 	core.redraw = true
 end
 
@@ -348,5 +356,3 @@ command.add(nil, {
 	["theme:prev"] = function() cycle_theme(-1) end,
 
 })
-
-return M

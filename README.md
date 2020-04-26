@@ -15,9 +15,12 @@ schemes/daylerees: https://github.com/daylerees/colour-schemes
 -- values greater than 1 increase the saturation (at 2 it becomes 1)
 --config.theme_saturation = 0.95 -- overall saturation
 --config.theme_lightness  = 0.90 -- overall lightness
--- If the following is true it will use scheme_list.lua. Otherwise a table will be generated 
+-- If the following list is set it will on use it
+--config.theme_list = {"edge dark", "edge light"}
+-- Otherwise, if the following is true it will use scheme_list.lua.
 --config.theme_usefile  = true 
--- If a table is generated and the following is true, it will be saved as scheme_list.lua
+-- Otherwise, a list is generated
+-- And, if the following is true, it will be saved as scheme_list.lua
 --config.theme_savefile = true
 config.theme_name = "edge-dark" -- name of the theme
 
