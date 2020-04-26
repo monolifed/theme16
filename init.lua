@@ -325,15 +325,15 @@ M.apply = function()
 			f:close()
 		end
 	end
-	--if not M.name then M.name = M.schemelist[1] end
+	if not M.name then M.name = M.schemelist[1] end
 	change_theme()
+
+	command.add(nil, {
+		["theme:change"] = change_theme,
+		["theme:next"] = function() cycle_theme( 1) end,
+		["theme:prev"] = function() cycle_theme(-1) end,
+
+	})
 end
-
-command.add(nil, {
-	["theme:change"] = change_theme,
-	["theme:next"] = function() cycle_theme( 1) end,
-	["theme:prev"] = function() cycle_theme(-1) end,
-
-})
 
 return M
