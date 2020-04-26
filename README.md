@@ -15,14 +15,17 @@ schemes/daylerees: https://github.com/daylerees/colour-schemes
 -- values greater than 1 increase the saturation (at 2 it becomes 1)
 --config.theme_saturation = 0.95 -- overall saturation
 --config.theme_lightness  = 0.90 -- overall lightness
--- If the following list is set it will on use it
---config.theme_list = {"edge dark", "edge light"}
--- Otherwise, if the following is true it will use scheme_list.lua.
---config.theme_usefile  = true 
--- Otherwise, a list is generated
--- And, if the following is true, it will be saved as scheme_list.lua
---config.theme_savefile = true
 config.theme_name = "edge-dark" -- name of the theme
+
+-- It can also be a table. Then the first one is set and the list will be used to cycle through
+--config.theme_name = {"edge dark", "edge light"}
+-- Otherwise, if the following is true, config.theme_listfile will be used to cycle through
+-- (config.theme_listfile defaults to "scheme_list.lua" in the plugin's directory)
+--config.theme_usefile  = true 
+-- Otherwise, a list will be generated from the files in config.theme_dir
+-- (config.theme_dir defaults to "schemes/" in the plugin's directory)
+-- And, if the following is true, generated list will be saved as config.theme_listfile
+--config.theme_savefile = true
 
 -- dynamically load a theme
 keymap.add { ["alt+home"] = "theme:change" }

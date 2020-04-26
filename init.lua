@@ -320,13 +320,14 @@ local modinit = function()
 	if not config.theme_listfile then config.theme_listfile = mpath .. "scheme_list.lua" end
 
 	local list
-	if config.theme_list then -- use the user defined list
+	if type(config.theme_name) == "table" then -- use the user defined list
 		list = {}
-		for i, name in ipairs(config.theme_list) do
+		for i, name in ipairs(config.theme_name) do
 			name = name:lower():gsub(' ','-'):gsub('[,]','')
 			name = locate_scheme(config.theme_dir, name)
 			if name then table.insert(list, name) end
 		end
+		config.theme_name = list[1]
 	elseif config.theme_usefile then -- OR use a list file
 		list = dofile(config.theme_listfile)
 	else -- OR scan the theme directory
