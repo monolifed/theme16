@@ -1,18 +1,18 @@
 scheme: "Github"
 author: "Defman21"
-base00: "ffffff" # 'back',
-base01: "f0f0f0" # 'lnback',
-base02: "e0e0e0" # 'whitespace'
-base03: "6a737d" # 'comment',
-base04: "bec0c1" # 'lnfore',
-base05: "24292e" # 'fore',
-base06: "000000" # 'operator',
-base07: "000000" # 'highlight',
-base08: "6f42c1" # 'variable',
-base09: "005cc5" # 'number',
-base0A: "22863a" # 'class',
-base0B: "032f62" # 'string',
-base0C: "d7893a" # 'support',
-base0D: "005cc5" # 'function',
-base0E: "d73a49" # 'keyword',
-base0F: "22863a" # 'embed',
+base00: "ffffff" 
+base01: "f5f5f5" 
+base02: "c8c8fa" 
+base03: "969896" 
+base04: "e8e8e8" 
+base05: "333333" 
+base06: "ffffff" 
+base07: "ffffff" 
+base08: "ed6a43" 
+base09: "0086b3" 
+base0A: "795da3" 
+base0B: "183691" 
+base0C: "183691" 
+base0D: "795da3" 
+base0E: "a71d5d" 
+base0F: "333333" 
