@@ -1,3 +1,4 @@
+-- lite-xl 1.16
 local modname, mpath = ...
 mpath = mpath:gsub("init.lua$", "")
 
@@ -9,27 +10,36 @@ local common  = require "core.common"
 local command = require "core.command"
 local config  = require "core.config"
 
-local function get_files(path, subpath, t)
+local _fmt = string.format
+
+local function _get_files(path, subpath, t)
 	t = t or {}
 	subpath = subpath or ""
-	local currentpath = path .. "/" .. subpath
+	local currentpath = _fmt("%s/%s", path, subpath)
 	local size_limit = 8192
 	local all = system.list_dir(currentpath)
 
 	for _, file in ipairs(all) do
-	  if not file:find("^%.") then
-		local info = system.get_file_info(currentpath .. file)
-		if info and info.size < size_limit then
-			if info.type == "dir" then
-				get_files(path, subpath .. file .. "/", t)
-			elseif file:match("%.yaml$") or file:match("%.json$") then
-				table.insert(t, subpath .. file)
+		if not file:find("^%.") then
+			local info = system.get_file_info(currentpath .. file)
+			if info then
+				if info.type == "dir" then
+					_get_files(path, _fmt("%s%s/", subpath, file), t)
+				elseif file:match("%.yaml$") or file:match("%.json$") then
+					if info.size < size_limit then
+						table.insert(t, subpath .. file)
+					end
+				end
 			end
 		end
-	  end
 	end
 	return t
 end
+
+local function get_files(path)
+	return _get_files(path, "", {})
+end
+
 
 local clamp = function(x, min, max)
 	if x > max then return max end
@@ -183,7 +193,8 @@ local parse_scheme = function(path, ext)
 	end
 	for id, k in pairs(map) do
 		if vars[k] == nil then
-		core.error('missing value %s in %s', id, path) return end
+			return nil, _fmt('missing %s field', id)
+		end
 	end
 	return vars
 end
@@ -236,15 +247,13 @@ local apply_scheme = function(name)
 
 	local scheme_name, scheme_path = locate_scheme(config.theme_dir, name)
 	if not scheme_path then
-		core.error('Theme "%s" cannot be found', name)
-		return
+		return nil, _fmt('Theme "%s" cannot be found', name)
 	end
 
 	local filetype = scheme_path:sub(-5)
-	local vars = parse_scheme(scheme_path, filetype)
+	local vars, err_msg = parse_scheme(scheme_path, filetype)
 	if vars == nil then
-		core.error('File "%s" is not supported', filetype)
-		return
+		return nil, _fmt('File "%s" is not supported (%s)', name, err_msg)
 	end
 
 	adjust_colors(vars, sadj, ladj)
@@ -278,18 +287,23 @@ local apply_scheme = function(name)
 	style.syntax["function"] = toRGB(vars["function"])
 
 	current_theme = scheme_name
+	return true
 end
 
 local change_theme = function(init)
 	local name = config.theme_name
 	if not name then
-		if not init then core.log('Theme name is not set') end
+		if not init then core.error('config.theme_name is not set') end
 		return 
 	end
 	
 	name = name:lower():gsub(' ','-'):gsub('[,]','')
-	apply_scheme(name)
-	core.log_quiet('Using "%s"', current_theme)
+	local ok, err_msg = apply_scheme(name)
+	if not ok then
+		core.error(err_msg)
+	else
+		core.log('Using "%s"', current_theme)
+	end
 end
 
 local cycle_theme = function(step)
@@ -309,8 +323,14 @@ local cycle_theme = function(step)
 		list_cur = step >= 0 and 1 or list_len
 	end
 	name = list[list_cur]
-	apply_scheme(name)
-	core.log('Using %i/%i: "%s"', list_cur, list_len, current_theme)
+	
+	local ok, err_msg = apply_scheme(name)
+	if not ok then
+		table.remove(list, list_cur)
+		core.error(err_msg)
+	else
+		core.log('Using %i/%i: "%s"', list_cur, list_len, current_theme)
+	end
 end
 
 local modinit = function()
