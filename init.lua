@@ -241,9 +241,9 @@ local locate_scheme = function(pdir, name)
 end
 
 local apply_scheme = function(name)
-	local sadj = config.theme_saturation
-	local ladj = config.theme_lightness
-	--local wadj = config.theme_whitespace or 0.5
+	local sadj = config.theme_saturation or 1.00
+	local ladj = config.theme_lightness  or 1.00
+	local wadj = config.theme_whitespace or 0.65
 
 	local scheme_name, scheme_path = locate_scheme(config.theme_dir, name)
 	if not scheme_path then
@@ -257,8 +257,6 @@ local apply_scheme = function(name)
 	end
 
 	adjust_colors(vars, sadj, ladj)
-	--local ws = vars.whitespace
-	--vars.whitespace = {ws[1], ws[2], adjmix(wadj, ws[3], vars.back[3], vars.fore[3])}
 
 	style.background     = toRGB(vars["back"])
 	style.background2    = toRGB(vars["back"])
@@ -285,6 +283,13 @@ local apply_scheme = function(name)
 	style.syntax["string"]   = toRGB(vars["string"])
 	style.syntax["operator"] = toRGB(vars["operator"])
 	style.syntax["function"] = toRGB(vars["function"])
+	
+	local ws = vars.whitespace
+	ws = {ws[1], ws[2], adjmix(wadj, ws[3], vars.back[3], vars.fore[3])}
+	--style.syntax["whitespace"] = toRGB(ws)
+	style.guide = toRGB(ws)
+	style.syntax["whitespace"] = common.lerp(style.syntax["comment"], style.background, 0.5)
+	
 
 	current_theme = scheme_name
 	return true
@@ -334,8 +339,6 @@ local cycle_theme = function(step)
 end
 
 local modinit = function()
-	if not config.theme_saturation then config.theme_saturation = 1.0 end
-	if not config.theme_lightness  then config.theme_lightness  = 1.0 end
 	if not config.theme_dir then config.theme_dir = mpath .. "schemes/" end
 	if not config.theme_listfile then config.theme_listfile = mpath .. "scheme_list.lua" end
 
@@ -371,9 +374,76 @@ end
 
 core.add_thread(modinit)
 
+
+local C2S = function(content, name, t)
+	if not t then return end
+	local r, g, b, a = t[1], t[2], t[3], t[4]
+	local s
+	if not a or a == 255 then s = _fmt("%s = {%i, %i, %i}", name, r, g, b)
+	else s = _fmt("%s = {%i, %i, %i, %i}", name, r, g, b, a) end
+	table.insert(content, s)
+end
+
+
+local write_theme = function()
+	local name = current_theme
+	local sadj = config.theme_saturation
+	local ladj = config.theme_lightness
+	local wadj = config.theme_whitespace
+
+	local content = {"-- This is an auto-generated file"}
+	if name then table.insert(content, _fmt("-- theme: %s", name)) end
+	if sadj then table.insert(content, _fmt("-- saturation: %s", sadj)) end
+	if ladj then table.insert(content, _fmt("-- lightness: %s" , ladj)) end
+	if wadj then table.insert(content, _fmt("-- whitespace: %s", wadj)) end
+
+	table.insert(content, "")
+	C2S(content, "style.background"    , style.background    )
+	C2S(content, "style.background2"   , style.background2   )
+	C2S(content, "style.background3"   , style.background3   )
+	C2S(content, "style.text"          , style.text          )
+	C2S(content, "style.caret"         , style.caret         )
+	C2S(content, "style.accent"        , style.accent        )
+	C2S(content, "style.dim"           , style.dim           )
+	C2S(content, "style.divider"       , style.divider       )
+	C2S(content, "style.selection"     , style.selection     )
+	C2S(content, "style.line_number"   , style.line_number   )
+	C2S(content, "style.line_number2"  , style.line_number2  )
+	C2S(content, "style.line_highlight", style.line_highlight)
+	C2S(content, "style.scrollbar"     , style.scrollbar     )
+	C2S(content, "style.scrollbar2"    , style.scrollbar2    )
+	table.insert(content, "")
+	C2S(content, 'style.syntax["normal"]'  , style.syntax["normal"]  )
+	C2S(content, 'style.syntax["symbol"]'  , style.syntax["symbol"]  )
+	C2S(content, 'style.syntax["comment"]' , style.syntax["comment"] )
+	C2S(content, 'style.syntax["keyword"]' , style.syntax["keyword"] )
+	C2S(content, 'style.syntax["keyword2"]', style.syntax["keyword2"])
+	C2S(content, 'style.syntax["number"]'  , style.syntax["number"]  )
+	C2S(content, 'style.syntax["literal"]' , style.syntax["literal"] )
+	C2S(content, 'style.syntax["string"]'  , style.syntax["string"]  )
+	C2S(content, 'style.syntax["operator"]', style.syntax["operator"])
+	C2S(content, 'style.syntax["function"]', style.syntax["function"])
+	
+	C2S(content, 'style.syntax["whitespace"]', style.syntax["whitespace"])
+	C2S(content, 'style.guide', style.guide)
+
+	--local savefile = name:gsub("%.json$", ""):gsub("%.yaml$", ""):gsub("/", "_")
+	local savefile = "saved_scheme.lua"
+	
+	local f = io.open(mpath .. savefile, "w")
+	for i, line in ipairs(content) do
+		f:write(line) f:write("\n")
+	end
+	f:close()
+	
+	return
+end
+
 command.add(nil, {
 	["theme:change"] = change_theme,
 	["theme:next"] = function() cycle_theme( 1) end,
 	["theme:prev"] = function() cycle_theme(-1) end,
+
+	["theme:write"] = write_theme,
 
 })
