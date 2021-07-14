@@ -1,5 +1,5 @@
 # theme16
-theme manager for [rxi/lite] and [lite-xl/lite-xl] (https://github.com/rxi/lite) with base16 themes
+theme manager for [rxi/lite](https://github.com/rxi/lite) and [lite-xl](https://github.com/lite-xl/lite-xl) with base16 themes
 
 Note: Files in the schemes directory have their own licenses (mostly MIT)  
 schemes/base16: https://github.com/chriskempson/base16#scheme-repositories  
