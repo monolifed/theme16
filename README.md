@@ -1,5 +1,5 @@
 # theme16
-theme manager for [rxi/lite](https://github.com/rxi/lite) with base16 themes
+theme manager for [rxi/lite] and [lite-xl/lite-xl] (https://github.com/rxi/lite) with base16 themes
 
 Note: Files in the schemes directory have their own licenses (mostly MIT)  
 schemes/base16: https://github.com/chriskempson/base16#scheme-repositories  
@@ -31,4 +31,7 @@ config.theme_name = "edge-dark" -- name of the theme
 keymap.add { ["alt+home"] = "theme:change" }
 keymap.add { ["alt+pageup"] = "theme:prev" }
 keymap.add { ["alt+pagedown"] = "theme:next" }
+-- write current theme to file
+keymap.add { ["alt+insert"] = "theme:write" } 
+
 ```
